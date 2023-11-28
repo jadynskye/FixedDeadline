@@ -1,0 +1,166 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+using namespace std;
+
+class Event {
+private:
+    string title;
+    string date;
+    string time;
+    bool reminder;
+
+public:
+    Event(const string& name, const string& num, const string& t, bool remind)
+        : title(name), date(num), time(t), reminder(remind) {} //constructor
+
+    void display() const { //displays scheduled event
+        cout << "Title: " << title << " | Date: " << date << " | Time: " << time;
+        if (reminder)
+            cout << " | Reminder has been set";
+        cout << std::endl;
+    }
+
+    const string& getDate() const {
+        return date;
+    }
+};
+
+class Calendar {
+private:
+    vector<Event> events;
+
+public:
+
+    void addEvent(const Event& event) { //schedule events
+        events.push_back(event);
+    }
+
+    void deleteEvent(const string& date) { //delete events
+        events.erase(remove_if(events.begin(), events.end(), [&](const Event& e) {
+            return e.getDate() == date;
+        }), events.end());
+    }
+
+    void displayDay(const string& date) const { //display for day
+        cout << "Events for " << date << ":\n";
+        for (const auto& event : events) {
+            if (event.getDate() == date)
+                event.display();
+        }
+    }
+
+    void displayWeek(const string& start, const string& end) const { //display for week
+        cout << "Displaying dates from " << start << " to " << end << ":\n";
+        for (const auto& event : events) {
+            if (event.getDate() >= start && event.getDate() <= end)
+                event.display();
+        }
+    }
+
+    void displayMonth(const string& month) const { //display for month
+        cout << "Events for " << month << ":\n";
+        for (const auto& event : events) {
+            if (event.getDate().substr(0, 7) == month)
+                event.display();
+        }
+    }
+};
+
+// Number of days in a month
+int daysMonth(int month) {
+    if (month == 2) // February (didn't include leap year)
+        return 28;
+    else if (month == 4 || month == 6 || month == 9 || month == 11) // April, June, September, November
+        return 30;
+    else
+        return 31; //January, March, May, July, August, October, December
+}
+
+int main() {
+    Calendar calendar;
+
+    int choice;
+    do {
+        cout << "\n1. Schedule Event\n2. Delete Event\n3. Day View\n4. Week View\n5. Month View\n6. Exit Program\n";
+        cout << "Enter 1 through 6: ";
+        cin >> choice;
+        cin.ignore(); // Clear buffer
+
+        switch (choice) {
+            case 1: {
+                string title, date, time;
+                bool reminder;
+                int month;
+
+                cout << "Title of event : ";
+                getline(cin, title);
+
+                do {
+                    cout << "Month of event: ";
+                    cin >> month;
+                } while (month < 1 || month > 12); //number of months user can enter
+
+                int maxDays = daysMonth(month);
+                int day;
+                do {
+                    cout << "Day of event (1-" << maxDays << "): "; //number of days in months
+                    cin >> day;
+                } while (day < 1 || day > maxDays);
+
+                cout << "Time of event: "; //time of event user inputs
+                cin >> time;
+
+                cout << "Would you like to set a reminder? (1 = Yes, 0 = No): "; //setting reminder
+                cin >> reminder;
+
+                //format for dates (YYYY-MM-DD)
+                string monthStr = (month < 10) ? "0" + to_string(month) : to_string(month);
+                string dayStr = (day < 10) ? "0" + to_string(day) : to_string(day);
+                date = "2023-" + monthStr + "-" + dayStr;
+
+                calendar.addEvent(Event(title, date, time, reminder));
+                break;
+            }
+            case 2: {
+                string dateDelete;
+                cout << "Enter date of event for deletion (YYYY-MM-DD): ";
+                cin >> dateDelete;
+                calendar.deleteEvent(dateDelete);
+                break;
+            }
+            case 3: {
+                string dateView;
+                cout << "Enter date for viewing (YYYY-MM-DD): ";
+                cin >> dateView;
+                calendar.displayDay(dateView);
+                break;
+            }
+            case 4: {
+                string start, end;
+                cout << "Start date of week (YYYY-MM-DD): ";
+                cin >> start;
+                cout << "End date of week (YYYY-MM-DD): ";
+                cin >> end;
+                calendar.displayWeek(start, end);
+                break;
+            }
+            case 5: {
+                string monthView;
+                cout << "Enter month for viewing (YYYY-MM): ";
+                cin >> monthView;
+                calendar.displayMonth(monthView);
+                break;
+            }
+            case 6:
+                cout << "Exiting.\n";
+                break;
+            default:
+                cout << "Invalid choice. Please try again.\n";
+                break;
+        }
+    } while (choice != 6);
+
+    return 0;
+}

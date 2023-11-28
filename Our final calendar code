@@ -1,0 +1,250 @@
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#include <map>
+#include <algorithm>
+
+using namespace std;
+
+// Class representing an event
+class Event {
+public:
+    string description;
+    int month; // Added month attribute
+
+    // Constructor to initialize event with a description and month
+    Event(const string& desc, int m) : description(desc), month(m) {}
+};
+
+// Class representing a calendar
+class Calendar {
+private:
+    map<int, vector<Event>> events; // Map to store events for each day
+
+public:
+    // Function to add an event to a specific day and month
+    void addEvent(int day, int month, const Event& event) {
+        events[day].push_back(event);
+    }
+
+    // Function to delete an event from a specific day and month based on description
+    void deleteEvent(int day, int month, const string& description) {
+        if (events.find(day) != events.end()) {
+            auto& dayEvents = events[day];
+            // Use remove_if and erase to delete the event based on description and month
+            dayEvents.erase(remove_if(dayEvents.begin(), dayEvents.end(),
+                                      [&description, &month](const Event& e) {
+                                          return e.description == description && e.month == month;
+                                      }),
+                            dayEvents.end());
+        }
+    }
+
+    // Function to display a day along with its events for the selected month
+    void displayDayWithEvents(int day, int selectedMonth) {
+        cout << setw(3) << day;
+
+        if (events.find(day) != events.end()) {
+            for (const auto& event : events[day]) {
+                // Check if the event's month matches the selected month
+                if (event.month == selectedMonth) {
+                    cout << " [" << event.description << " - " << event.month << "]";
+                }
+            }
+        }
+
+        cout << " ";
+    }
+
+    // Function to display the calendar for a specific month and year
+    void displayMonth(int month, int year) {
+        cout << "-----------------------------\n";
+        cout << "      " << setw(3) << month << " / " << year << "\n";
+        cout << "-----------------------------\n";
+        cout << " Su Mo Tu We Th Fr Sa\n";
+
+        int daysInMonth = getDaysInMonth(month, year);
+        int startingDay = getStartingDay(month, year);
+
+        int day = 1;
+        for (int i = 0; i < 6; ++i) {
+            for (int j = 0; j < 7; ++j) {
+                if ((i == 0 && j < startingDay) || day > daysInMonth) {
+                    cout << "   ";
+                } else {
+                    displayDayWithEvents(day, month); // Pass the selected month to displayDayWithEvents
+                    day++;
+                }
+            }
+            cout << "\n";
+        }
+    }
+
+    // Function to display the calendar for the entire year
+    void displayYear(int year) {
+        for (int month = 1; month <= 12; ++month) {
+            displayMonth(month, year);
+            cout << "\n";
+        }
+    }
+
+    // Function to navigate to the next month
+    void navigateToNextMonth(int& month, int& year) {
+        if (month == 12) {
+            month = 1;
+            year++;
+        } else {
+            month++;
+        }
+    }
+
+    // Function to navigate to the previous month
+    void navigateToPreviousMonth(int& month, int& year) {
+        if (month == 1) {
+            month = 12;
+            year--;
+        } else {
+            month--;
+        }
+    }
+
+    // Function to get user input for adding an event
+    void getUserEventInput() {
+        int day, month;
+        string eventDescription;
+
+        cout << "Enter month (1-12): ";
+        cin >> month;
+
+        if (month < 1 || month > 12) {
+            cout << "Invalid month. Exiting.\n";
+            return;
+        }
+
+        cout << "Enter day (1-31): ";
+        cin >> day;
+
+        if (day < 1 || day > 31) {
+            cout << "Invalid day. Exiting.\n";
+            return;
+        }
+
+        cin.ignore(); // Clear the newline character from the buffer
+
+        cout << "Enter event description: ";
+        getline(cin, eventDescription);
+
+        Event newEvent(eventDescription, month);
+        addEvent(day, month, newEvent);
+    }
+
+    // Function to get user input for deleting an event
+    void getUserDeleteEventInput() {
+        int day, month;
+        string eventDescription;
+
+        cout << "Enter month (1-12) to delete event: ";
+        cin >> month;
+
+        if (month < 1 || month > 12) {
+            cout << "Invalid month. Exiting.\n";
+            return;
+        }
+
+        cout << "Enter day (1-31) to delete event: ";
+        cin >> day;
+
+        if (day < 1 || day > 31) {
+            cout << "Invalid day. Exiting.\n";
+            return;
+        }
+
+        cin.ignore(); // Clear the newline character from the buffer
+
+        cout << "Enter event description to delete: ";
+        getline(cin, eventDescription);
+
+        deleteEvent(day, month, eventDescription);
+    }
+
+private:
+    // Function to get the number of days in a month for a given year
+    int getDaysInMonth(int month, int year) {
+        if (month == 4 || month == 6 || month == 9 || month == 11) {
+            return 30;
+        } else if (month == 2) {
+            // Leap year calculation
+            return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? 29 : 28;
+        } else {
+            return 31;
+        }
+    }
+
+    // Function to calculate the starting day of the month using Zeller's Congruence algorithm
+    int getStartingDay(int month, int year) {
+        if (month < 3) {
+            month += 12;
+            year--;
+        }
+        int k = year % 100;
+        int j = year / 100;
+        int day = (1 + ((13 * (month + 1)) / 5) + k + (k / 4) + (j / 4) - (2 * j)) % 7;
+        return (day + 5) % 7; // 0 is Saturday, 1 is Sunday, ..., 6 is Friday
+    }
+};
+
+// Main function
+int main() {
+    Calendar calendar;
+    cout << R"(
+
+ ,------.,--.                   ,--.    ,------.                    ,--.,--.,--.
+ |  .---'`--',--.  ,--.,---.  ,-|  |    |  .-.  \  ,---.  ,--,--. ,-|  ||  |`--',--,--,  ,---.
+ |  `--, ,--. \  `'  /| .-. :' .-. |    |  |  \  :| .-. :' ,-.  |' .-. ||  |,--.|      \| .-. :
+ |  |`   |  | /  /.  \\   --.\ `-' |    |  '--'  /\   --.\ '-'  |\ `-' ||  ||  ||  ||  |\   --.
+ `--'    `--''--'  '--'`----' `---'     `-------'  `----' `--`--' `---' `--'`--'`--''--' `----'
+ )" << endl;
+    int choice;
+    int currentMonth = 1;
+    int currentYear = 2023;
+
+    do {
+        cout << "\nCalendar Menu:\n";
+        cout << "1. Display current month\n";
+        cout << "2. Display current year\n";
+        cout << "3. Navigate to next month\n";
+        cout << "4. Navigate to previous month\n";
+        cout << "5. Add event\n";
+        cout << "6. Delete event\n";
+        cout << "7. Exit\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                calendar.displayMonth(currentMonth, currentYear);
+                break;
+            case 2:
+                calendar.displayYear(currentYear);
+                break;
+            case 3:
+                calendar.navigateToNextMonth(currentMonth, currentYear);
+                break;
+            case 4:
+                calendar.navigateToPreviousMonth(currentMonth, currentYear);
+                break;
+            case 5:
+                calendar.getUserEventInput();
+                break;
+            case 6:
+                calendar.getUserDeleteEventInput();
+                break;
+            case 7:
+                cout << "Exiting the program.\n";
+                break;
+            default:
+                cout << "Invalid choice. Please enter a valid option.\n";
+        }
+    } while (choice != 7);
+
+    return 0;
